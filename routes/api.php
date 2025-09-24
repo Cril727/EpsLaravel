@@ -20,6 +20,11 @@ Route::post('/login', [AuthController::class, 'login']);
 
 //Rutas protegidas con autenticación JWT
 Route::middleware(['jwt.auth'])->group(function () {
+    
+    Route::post('/logout', [AuthController::class, 'logout']);
+    
+    Route::get('/mi-perfil', [UserController::class, 'miPerfil']);
+    Route::put('/actualizar-perfil', [UserController::class, 'actualizarPerfil']);
 
     //Admin
     Route::middleware(['rol:admin'])->group(function () {
@@ -37,6 +42,7 @@ Route::middleware(['jwt.auth'])->group(function () {
         Route::put('/updateUser/{id}',[UserController::class,'update']);
         Route::delete('/deleteUser/{id}',[UserController::class,'delete']);
         Route::get('/userById/{id}',[UserController::class,'userById']);
+        Route::put('/actualizar-perfil-admin/{id}',[UserController::class,'actualizarPerfilAdmin']);
 
         //Doctores
         Route::post('/addDoctor',[DoctorController::class,'store']);

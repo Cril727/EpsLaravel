@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -44,5 +45,22 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Credenciales inválidas'], 401);
+    }
+
+    public function logout(Request $request)
+    {
+        try {
+            // Invalidate the token using JWT
+            JWTAuth::invalidate(JWTAuth::getToken());
+            
+            return response()->json([
+                'message' => 'Sesión cerrada exitosamente'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al cerrar sesión',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

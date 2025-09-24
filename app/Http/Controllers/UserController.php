@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserController extends Controller
 {
@@ -99,5 +100,114 @@ class UserController extends Controller
         }
 
         return response()->json(['user' => $user]);
+    }
+
+    public function miPerfil(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            
+            if (!$user) {
+                return response()->json(['message' => 'Usuario no autenticado'], 401);
+            }
+
+            // Load the role relationship
+            $user->load('role');
+
+            return response()->json([
+                'user' => $user,
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Token inválido'], 401);
+        }
+    }
+
+    public function actualizarPerfil(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            
+            if (!$user) {
+                return response()->json(['message' => 'Usuario no autenticado'], 401);
+            }
+
+        $validated = Validator::make($request->all(), [
+            'nombres' => 'required|string',
+            'apellidos' => 'required|string',
+            'telefono' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        if ($validated->fails()) {
+            return response()->json(['errors' => $validated->errors()], 422);
+        }
+
+        $updateData = [
+            'nombres' => $request->nombres,
+            'apellidos' => $request->apellidos,
+            'telefono' => $request->telefono,
+            'email' => $request->email,
+        ];
+
+        // Only update password if provided
+        if ($request->password) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente',
+            'success' => true,
+            'user' => $user
+        ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Token inválido'], 401);
+        }
+    }
+
+    public function actualizarPerfilAdmin(Request $request, $id)
+    {
+        $user = User::find($id);
+        
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
+
+        $validated = Validator::make($request->all(), [
+            'nombres' => 'required|string',
+            'apellidos' => 'required|string',
+            'telefono' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:6',
+            'rol_id' => 'required|numeric|exists:roles,id',
+        ]);
+
+        if ($validated->fails()) {
+            return response()->json(['errors' => $validated->errors()], 422);
+        }
+
+        $updateData = [
+            'nombres' => $request->nombres,
+            'apellidos' => $request->apellidos,
+            'telefono' => $request->telefono,
+            'email' => $request->email,
+            'rol_id' => $request->rol_id,
+        ];
+
+        // Only update password if provided
+        if ($request->password) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
+
+        return response()->json([
+            'message' => 'Usuario actualizado correctamente',
+            'success' => true,
+            'user' => $user
+        ]);
     }
 }
