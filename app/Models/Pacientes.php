@@ -50,4 +50,14 @@ class Pacientes extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(Roles::class);
     }
+
+    /**
+     * Get the attributes that should be cast.
+     */
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
 }

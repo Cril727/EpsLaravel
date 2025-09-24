@@ -23,6 +23,7 @@ Route::middleware(['jwt.auth'])->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     
+    // Profile routes available for all authenticated users
     Route::get('/mi-perfil', [UserController::class, 'miPerfil']);
     Route::put('/actualizar-perfil', [UserController::class, 'actualizarPerfil']);
 
@@ -87,9 +88,9 @@ Route::middleware(['jwt.auth'])->group(function () {
     // Doctores
     Route::middleware(['rol:doctor'])->group(function () {
 
-        //Perfil del doctor
-        Route::get('/mi-perfil', [DoctorController::class, 'miPerfil']);
-        Route::put('/actualizar-perfil', [DoctorController::class, 'actualizarPerfil']);
+        //Perfil del doctor (using general profile endpoints)
+        // Route::get('/mi-perfil', [DoctorController::class, 'miPerfil']);
+        // Route::put('/actualizar-perfil', [DoctorController::class, 'actualizarPerfil']);
 
         //Citas del doctor
         Route::get('/mis-citas', [DoctorController::class, 'misCitas']);
@@ -111,9 +112,9 @@ Route::middleware(['jwt.auth'])->group(function () {
     // Pacientes
     Route::middleware(['rol:paciente'])->group(function () {
 
-        //Perfil del paciente
-        Route::get('/mi-perfil', [PacienteController::class, 'miPerfil']);
-        Route::put('/actualizar-perfil', [PacienteController::class, 'actualizarPerfil']);
+        //Perfil del paciente (using general profile endpoints)
+        // Route::get('/mi-perfil', [PacienteController::class, 'miPerfil']);
+        // Route::put('/actualizar-perfil', [PacienteController::class, 'actualizarPerfil']);
 
         //Citas del paciente
         Route::get('/mis-citas', [PacienteController::class, 'misCitas']);

@@ -59,12 +59,12 @@ class Doctores extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get the password for the user.
+     * Get the attributes that should be cast.
      */
-    protected function password(): Attribute
+    protected function casts(): array
     {
-        return Attribute::make(
-            set: fn ($value) => bcrypt($value),
-        );
+        return [
+            'password' => 'hashed',
+        ];
     }
 }

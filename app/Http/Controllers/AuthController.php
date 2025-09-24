@@ -30,11 +30,13 @@ class AuthController extends Controller
         foreach ($guards as $guard) {
             if ($token = Auth::guard($guard)->attempt($credentials)) {
                 $user = Auth::guard($guard)->user();
-
-                $role = $user->role
-                    ?? $user->rol
-                    ?? ($user->rol_id ?? null)
-                    ?? ($guard === 'apiAdmin' ? 'admin' : ($guard === 'apiDoctor' ? 'doctor' : 'paciente'));
+                
+                if ($user && $user->rol_id) {
+                    $role = \App\Models\Roles::find($user->rol_id);
+                    if ($role) {
+                        $user->rol = $role;
+                    }
+                }
 
                 return response()->json([
                     'access_token' => $token,
@@ -50,7 +52,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            // Invalidate the token using JWT
             JWTAuth::invalidate(JWTAuth::getToken());
             
             return response()->json([

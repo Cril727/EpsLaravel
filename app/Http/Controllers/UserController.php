@@ -111,15 +111,18 @@ class UserController extends Controller
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
 
-            // Load the role relationship
-            $user->load('role');
+            // Load the role relationship - use 'rol' instead of 'role'
+            $user->load('rol');
 
             return response()->json([
                 'user' => $user,
                 'success' => true
             ]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Token inválido'], 401);
+            return response()->json([
+                'message' => 'Token inválido',
+                'error' => $e->getMessage()
+            ], 401);
         }
     }
 
@@ -132,39 +135,60 @@ class UserController extends Controller
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
 
-        $validated = Validator::make($request->all(), [
-            'nombres' => 'required|string',
-            'apellidos' => 'required|string',
-            'telefono' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:6',
-        ]);
+            // Determine the table name for email uniqueness validation
+            $tableName = $this->getTableName($user);
+            
+            $validated = Validator::make($request->all(), [
+                'nombres' => 'required|string',
+                'apellidos' => 'required|string',
+                'telefono' => 'required|string',
+                'email' => 'required|email|unique:' . $tableName . ',email,' . $user->id,
+                'password' => 'nullable|string|min:6',
+            ]);
 
-        if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 422);
-        }
+            if ($validated->fails()) {
+                return response()->json(['errors' => $validated->errors()], 422);
+            }
 
-        $updateData = [
-            'nombres' => $request->nombres,
-            'apellidos' => $request->apellidos,
-            'telefono' => $request->telefono,
-            'email' => $request->email,
-        ];
+            $updateData = [
+                'nombres' => $request->nombres,
+                'apellidos' => $request->apellidos,
+                'telefono' => $request->telefono,
+                'email' => $request->email,
+            ];
 
-        // Only update password if provided
-        if ($request->password) {
-            $updateData['password'] = Hash::make($request->password);
-        }
+            // Only update password if provided
+            if ($request->password) {
+                $updateData['password'] = Hash::make($request->password);
+            }
 
-        $user->update($updateData);
+            $user->update($updateData);
 
-        return response()->json([
-            'message' => 'Perfil actualizado correctamente',
-            'success' => true,
-            'user' => $user
-        ]);
+            return response()->json([
+                'message' => 'Perfil actualizado correctamente',
+                'success' => true,
+                'user' => $user
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Token inválido'], 401);
+            return response()->json([
+                'message' => 'Error al actualizar perfil',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getTableName($user)
+    {
+        $className = get_class($user);
+        switch ($className) {
+            case 'App\Models\User':
+                return 'users';
+            case 'App\Models\Doctores':
+                return 'doctores';
+            case 'App\Models\Pacientes':
+                return 'pacientes';
+            default:
+                return 'users';
         }
     }
 

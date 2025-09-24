@@ -15,13 +15,22 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next,...$rol): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        $user = JWTAuth::parseToken()->authenticate();
-
-        if(!in_array($user->$rol,$rol,true)){
-            return response()->json(['Error' => 'Error no tienes el permiso necesario'],403);
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            
+            $user->load('rol');
+            
+            $userRole = $user->rol ? $user->rol->rol : null;
+            
+            if (!$userRole || !in_array($userRole, $roles, true)) {
+                return response()->json(['Error' => 'Error no tienes el permiso necesario'], 403);
+            }
+            
+            return $next($request);
+        } catch (\Exception $e) {
+            return response()->json(['Error' => 'Token inválido'], 401);
         }
-        return $next($request);
     }
 }
