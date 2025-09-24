@@ -1,0 +1,31 @@
+created:
+    - database/factories/RoleFactory.php
+    - database/factories/PacienteFactory.php
+    - database/factories/EspecialidadeFactory.php
+    - database/factories/DoctoreFactory.php
+    - database/factories/ConsultorioFactory.php
+    - database/factories/CitasMedicaFactory.php
+    - database/factories/HorarioFactory.php
+    - database/migrations/2025_09_24_040407_create_roles_table.php
+    - database/migrations/2025_09_24_040408_create_pacientes_table.php
+    - database/migrations/2025_09_24_040409_create_especialidades_table.php
+    - database/migrations/2025_09_24_040410_create_doctores_table.php
+    - database/migrations/2025_09_24_040411_create_consultorios_table.php
+    - database/migrations/2025_09_24_040412_create_citas_medicas_table.php
+    - database/migrations/2025_09_24_040413_create_horarios_table.php
+    - app/Models/Role.php
+    - app/Models/Paciente.php
+    - app/Models/Especialidade.php
+    - app/Models/Doctore.php
+    - app/Models/Consultorio.php
+    - app/Models/CitasMedica.php
+    - app/Models/Horario.php
+models:
+    User: { name: string, email: string, email_verified_at: 'datetime nullable', password: string, remember_token: 'string nullable' }
+    Role: { id: increments, rol: string }
+    Paciente: { id: increments, nombres: string, apellidos: string, email: 'string unique', telefono: string, password: 'string default:"123456789"', rol_id: 'integer foreign:roles.id' }
+    Especialidade: { id: increments, especialidad: string }
+    Doctore: { id: increments, nombres: string, apellidos: string, email: 'string unique', telefono: string, estado: 'enum:"Activo","Inactivo" default:"Activo"', password: 'string default:"12345678"', rol_id: 'integer foreign:roles.id', especialidad_id: 'integer foreign:especialidades.id' }
+    Consultorio: { id: increments, codigo: 'string unique', ubicacion: string, piso: integer, doctor_id: 'integer nullable foreign:doctores.id' }
+    CitasMedica: { id: id, fechaHora: dateTime, estado: 'enum:"Programada","Completada","Cancelada","Rechazada" default:"Programada"', novedad: 'string nullable', paciente_id: 'integer foreign:pacientes.id', doctor_id: 'integer foreign:doctores.id', consultorio_id: integer }
+    Horario: { id: increments, horaInicio: time, horaFin: time, estado: 'enum:"Activo","Inactivo" default:"Activo"', doctor_id: 'integer foreign:doctores.id' }
