@@ -47,4 +47,9 @@ class CitasMedicas extends Model
     {
         return $this->belongsTo(Doctores::class);
     }
+
+    public function consultorio(): BelongsTo
+    {
+        return $this->belongsTo(Consultorios::class);
+    }
 }

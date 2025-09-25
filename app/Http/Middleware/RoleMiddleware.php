@@ -19,15 +19,15 @@ class RoleMiddleware
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            
+
             $user->load('rol');
-            
+
             $userRole = $user->rol ? $user->rol->rol : null;
-            
+
             if (!$userRole || !in_array($userRole, $roles, true)) {
                 return response()->json(['Error' => 'Error no tienes el permiso necesario'], 403);
             }
-            
+
             return $next($request);
         } catch (\Exception $e) {
             return response()->json(['Error' => 'Token inválido'], 401);

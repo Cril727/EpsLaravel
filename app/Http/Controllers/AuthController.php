@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -30,13 +29,11 @@ class AuthController extends Controller
         foreach ($guards as $guard) {
             if ($token = Auth::guard($guard)->attempt($credentials)) {
                 $user = Auth::guard($guard)->user();
-                
-                if ($user && $user->rol_id) {
-                    $role = \App\Models\Roles::find($user->rol_id);
-                    if ($role) {
-                        $user->rol = $role;
-                    }
-                }
+
+                $role = $user->role
+                    ?? $user->rol
+                    ?? ($user->rol_id ?? null)
+                    ?? ($guard === 'apiAdmin' ? 'admin' : ($guard === 'apiDoctor' ? 'doctor' : 'paciente'));
 
                 return response()->json([
                     'access_token' => $token,
@@ -52,11 +49,19 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            JWTAuth::invalidate(JWTAuth::getToken());
-            
+            $guards = ['apiAdmin', 'apiDoctor', 'apiPaciente'];
+
+            foreach ($guards as $guard) {
+                if (Auth::guard($guard)->check()) {
+                    Auth::guard($guard)->logout();
+                    break;
+                }
+            }
+
             return response()->json([
-                'message' => 'Sesión cerrada exitosamente'
-            ], 200);
+                'message' => 'Sesión cerrada correctamente',
+                'success' => true
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al cerrar sesión',

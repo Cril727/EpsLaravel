@@ -105,8 +105,8 @@ class UserController extends Controller
     public function miPerfil(Request $request)
     {
         try {
-            $user = JWTAuth::parseToken()->authenticate();
-            
+            $user = auth('apiAdmin')->user();
+
             if (!$user) {
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
@@ -129,19 +129,19 @@ class UserController extends Controller
     public function actualizarPerfil(Request $request)
     {
         try {
-            $user = JWTAuth::parseToken()->authenticate();
-            
+            $user = auth('apiAdmin')->user();
+
             if (!$user) {
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
 
             // Determine the table name for email uniqueness validation
             $tableName = $this->getTableName($user);
-            
+
             $validated = Validator::make($request->all(), [
                 'nombres' => 'required|string',
                 'apellidos' => 'required|string',
-                'telefono' => 'required|string',
+                'telefono' => 'sometimes|string',
                 'email' => 'required|email|unique:' . $tableName . ',email,' . $user->id,
                 'password' => 'nullable|string|min:6',
             ]);
@@ -153,9 +153,13 @@ class UserController extends Controller
             $updateData = [
                 'nombres' => $request->nombres,
                 'apellidos' => $request->apellidos,
-                'telefono' => $request->telefono,
                 'email' => $request->email,
             ];
+
+            // Add telefono if provided
+            if ($request->has('telefono')) {
+                $updateData['telefono'] = $request->telefono;
+            }
 
             // Only update password if provided
             if ($request->password) {
@@ -163,6 +167,9 @@ class UserController extends Controller
             }
 
             $user->update($updateData);
+
+            // Reload the user with relationships
+            $user->load('rol');
 
             return response()->json([
                 'message' => 'Perfil actualizado correctamente',
@@ -194,17 +201,24 @@ class UserController extends Controller
 
     public function actualizarPerfilAdmin(Request $request, $id)
     {
+        // First try to find in User table
         $user = User::find($id);
-        
+
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
+        // Get the current role to determine which table to validate against
+        $currentRole = $user->rol_id;
+
+        // Determine table name for email uniqueness validation
+        $tableName = 'users'; // Default to users table
+
         $validated = Validator::make($request->all(), [
             'nombres' => 'required|string',
             'apellidos' => 'required|string',
-            'telefono' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'telefono' => 'sometimes|string',
+            'email' => 'required|email|unique:' . $tableName . ',email,' . $user->id,
             'password' => 'nullable|string|min:6',
             'rol_id' => 'required|numeric|exists:roles,id',
         ]);
@@ -216,17 +230,24 @@ class UserController extends Controller
         $updateData = [
             'nombres' => $request->nombres,
             'apellidos' => $request->apellidos,
-            'telefono' => $request->telefono,
             'email' => $request->email,
             'rol_id' => $request->rol_id,
         ];
 
-        // Only update password if provided
-        if ($request->password) {
+        // Add telefono if provided
+        if ($request->has('telefono')) {
+            $updateData['telefono'] = $request->telefono;
+        }
+
+        // Only update password if provided and not empty
+        if ($request->password && !empty($request->password)) {
             $updateData['password'] = Hash::make($request->password);
         }
 
         $user->update($updateData);
+
+        // Reload the user with relationships
+        $user->load('rol');
 
         return response()->json([
             'message' => 'Usuario actualizado correctamente',

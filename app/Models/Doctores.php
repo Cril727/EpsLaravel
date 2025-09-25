@@ -58,6 +58,21 @@ class Doctores extends Authenticatable implements JWTSubject
         return $this->belongsTo(Especialidades::class);
     }
 
+    public function consultorios()
+    {
+        return $this->hasMany(Consultorios::class);
+    }
+
+    public function horarios()
+    {
+        return $this->hasMany(Horarios::class);
+    }
+
+    public function citas()
+    {
+        return $this->hasMany(CitasMedicas::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      */
@@ -68,3 +83,4 @@ class Doctores extends Authenticatable implements JWTSubject
         ];
     }
 }
+

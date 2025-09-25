@@ -20,15 +20,53 @@ Route::post('/login', [AuthController::class, 'login']);
 
 //Rutas protegidas con autenticación JWT
 Route::middleware(['jwt.auth'])->group(function () {
-    
+
     Route::post('/logout', [AuthController::class, 'logout']);
-    
-    // Profile routes available for all authenticated users
-    Route::get('/mi-perfil', [UserController::class, 'miPerfil']);
-    Route::put('/actualizar-perfil', [UserController::class, 'actualizarPerfil']);
+
+    // Doctores
+    Route::middleware(['rol:doctor'])->group(function () {
+
+        //Perfil del doctor
+        Route::get('/mi-perfil', [DoctorController::class, 'miPerfil']);
+        Route::put('/actualizar-perfil', [DoctorController::class, 'actualizarPerfil']);
+
+        //Citas del doctor
+        Route::get('/mis-citas', [DoctorController::class, 'misCitas']);
+        Route::get('/mis-citas-pendientes', [DoctorController::class, 'misCitasPendientes']);
+        Route::put('/aprobar-cita/{id}', [DoctorController::class, 'aprobarCita']);
+        Route::put('/rechazar-cita/{id}', [DoctorController::class, 'rechazarCita']);
+
+        //Horarios del doctor
+        Route::get('/mis-horarios', [HorarioController::class, 'misHorarios']);
+        Route::post('/addHorario',[HorarioController::class,'store']);
+        Route::put('/updateHorario/{id}',[HorarioController::class,'update']);
+        Route::delete('/deleteHorario/{id}',[HorarioController::class,'delete']);
+        Route::get('/horarioById/{id}',[HorarioController::class,'horarioById']);
+
+        //Consultorio del doctor
+        Route::get('/mi-consultorio', [ConsultoriosController::class, 'miConsultorio']);
+    });
+
+    // Pacientes
+    Route::middleware(['rol:paciente'])->group(function () {
+
+        //Perfil del paciente
+        Route::get('/mi-perfil', [PacienteController::class, 'miPerfil']);
+        Route::put('/actualizar-perfil', [PacienteController::class, 'actualizarPerfil']);
+
+        //Citas del paciente
+        Route::get('/mis-citas', [PacienteController::class, 'misCitas']);
+        Route::post('/solicitar-cita', [PacienteController::class, 'solicitarCita']);
+        Route::get('/doctores-disponibles', [PacienteController::class, 'doctoresDisponibles']);
+        Route::get('/horarios-disponibles/{doctor_id}', [PacienteController::class, 'horariosDisponibles']);
+    });
 
     //Admin
     Route::middleware(['rol:admin'])->group(function () {
+
+        //Perfil del admin
+        Route::get('/mi-perfil', [UserController::class, 'miPerfil']);
+        Route::put('/actualizar-perfil', [UserController::class, 'actualizarPerfil']);
 
         //Roles
         Route::post('/addRol',[RoleControler::class,'store']);
@@ -43,7 +81,6 @@ Route::middleware(['jwt.auth'])->group(function () {
         Route::put('/updateUser/{id}',[UserController::class,'update']);
         Route::delete('/deleteUser/{id}',[UserController::class,'delete']);
         Route::get('/userById/{id}',[UserController::class,'userById']);
-        Route::put('/actualizar-perfil-admin/{id}',[UserController::class,'actualizarPerfilAdmin']);
 
         //Doctores
         Route::post('/addDoctor',[DoctorController::class,'store']);
@@ -85,47 +122,9 @@ Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/citaById/{id}',[CitaController::class,'CitaById']);
     });
 
-    // Doctores
-    Route::middleware(['rol:doctor'])->group(function () {
+    // Doctor, Paciente y Admin
 
-        //Perfil del doctor (using general profile endpoints)
-        // Route::get('/mi-perfil', [DoctorController::class, 'miPerfil']);
-        // Route::put('/actualizar-perfil', [DoctorController::class, 'actualizarPerfil']);
-
-        //Citas del doctor
-        Route::get('/mis-citas', [DoctorController::class, 'misCitas']);
-        Route::get('/mis-citas-pendientes', [DoctorController::class, 'misCitasPendientes']);
-        Route::put('/aprobar-cita/{id}', [DoctorController::class, 'aprobarCita']);
-        Route::put('/rechazar-cita/{id}', [DoctorController::class, 'rechazarCita']);
-
-        //Horarios del doctor
-        Route::get('/mis-horarios', [HorarioController::class, 'misHorarios']);
-        Route::post('/addHorario',[HorarioController::class,'store']);
-        Route::put('/updateHorario/{id}',[HorarioController::class,'update']);
-        Route::delete('/deleteHorario/{id}',[HorarioController::class,'delete']);
-        Route::get('/horarioById/{id}',[HorarioController::class,'horarioById']);
-
-        //Consultorio del doctor
-        Route::get('/mi-consultorio', [ConsultoriosController::class, 'miConsultorio']);
-    });
-
-    // Pacientes
-    Route::middleware(['rol:paciente'])->group(function () {
-
-        //Perfil del paciente (using general profile endpoints)
-        // Route::get('/mi-perfil', [PacienteController::class, 'miPerfil']);
-        // Route::put('/actualizar-perfil', [PacienteController::class, 'actualizarPerfil']);
-
-        //Citas del paciente
-        Route::get('/mis-citas', [PacienteController::class, 'misCitas']);
-        Route::post('/solicitar-cita', [PacienteController::class, 'solicitarCita']);
-        Route::get('/doctores-disponibles', [PacienteController::class, 'doctoresDisponibles']);
-        Route::get('/horarios-disponibles/{doctor_id}', [PacienteController::class, 'horariosDisponibles']);
-    });
-
-    // Doctor y Paciente
-    
-    Route::group(['middleware' => ['rol:doctor,paciente']], function () {
+    Route::group(['middleware' => ['rol:doctor,paciente,admin']], function () {
         Route::post('/addCita',[CitaController::class,'store']);
         Route::put('/updateCita/{id}',[CitaController::class,'update']);
         Route::delete('/deleteCita/{id}',[CitaController::class,'delete']);
