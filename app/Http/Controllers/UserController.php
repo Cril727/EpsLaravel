@@ -105,10 +105,10 @@ class UserController extends Controller
     public function miPerfil(Request $request)
     {
         try {
-            $user = auth('apiAdmin')->user();
+            $user = auth('apiAdmin')->user() ?? $request->jwt_user;
 
-            if (!$user) {
-                return response()->json(['message' => 'Usuario no autenticado'], 401);
+            if (!$user || !isset($user->id)) {
+                return response()->json(['error' => 'Usuario no válido'], 401);
             }
 
             // Load the role relationship - use 'rol' instead of 'role'
@@ -129,10 +129,10 @@ class UserController extends Controller
     public function actualizarPerfil(Request $request)
     {
         try {
-            $user = auth('apiAdmin')->user();
+            $user = auth('apiAdmin')->user() ?? $request->jwt_user;
 
-            if (!$user) {
-                return response()->json(['message' => 'Usuario no autenticado'], 401);
+            if (!$user || !isset($user->id)) {
+                return response()->json(['error' => 'Usuario no válido'], 401);
             }
 
             // Determine the table name for email uniqueness validation

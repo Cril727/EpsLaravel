@@ -18,22 +18,28 @@ class HorarioController extends Controller
 
     public function store(Request $request)
     {
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        // Ensure we have a valid doctor user
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $validated = Validator::make($request->all(), [
             'horaInicio' => 'required|date_format:H:i',
             'horaFin'    => 'required|date_format:H:i',
             'estado' => 'required|string',
-            'doctor_id' => 'required|numeric',
         ]);
 
         if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 500);
+            return response()->json(['errors' => $validated->errors()], 422);
         }
 
         $crearHorario = Horarios::create([
             'horaInicio' => $request->horaInicio,
             'horaFin' => $request->horaFin,
             'estado' => $request->estado,
-            'doctor_id' => $request->doctor_id
+            'doctor_id' => $doctor->id
         ]);
 
         return response()->json(
@@ -47,23 +53,28 @@ class HorarioController extends Controller
 
     public function update(Request $request, $id)
     {
-        $horario = Horarios::find($id);
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        // Ensure we have a valid doctor user
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
+        $horario = Horarios::where('id', $id)->where('doctor_id', $doctor->id)->first();
 
         if (!$horario) {
-            return response()->json(['message' => "No se ha encontrado el horario"]);
+            return response()->json(['message' => "No se ha encontrado el horario o no tienes permisos para editarlo"]);
         }
 
         $validated = Validator::make($request->all(), [
             'horaInicio' => 'required|date_format:H:i',
             'horaFin'    => 'required|date_format:H:i',
             'estado' => 'required|string',
-            'doctor_id' => 'required|numeric',
         ]);
 
         if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 500);
+            return response()->json(['errors' => $validated->errors()], 422);
         }
-
 
         $horario->update($validated->validated());
 
@@ -72,10 +83,17 @@ class HorarioController extends Controller
 
     public function delete($id)
     {
-        $horario = Horarios::find($id);
+        $doctor = auth('apiDoctor')->user() ?? request()->jwt_user;
+
+        // Ensure we have a valid doctor user
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
+        $horario = Horarios::where('id', $id)->where('doctor_id', $doctor->id)->first();
 
         if (!$horario) {
-            return response()->json(['message' => 'no se encontro el horario']);
+            return response()->json(['message' => 'no se encontro el horario o no tienes permisos para eliminarlo']);
         }
 
         $horario->delete();
@@ -93,19 +111,24 @@ class HorarioController extends Controller
 
         return response()->json(['horario' => $horario]);
     }
-
-    // ========== MÉTODOS ESPECÍFICOS PARA DOCTORES ==========
-
+    
     /**
      * Obtener horarios del doctor autenticado
      */
-    public function misHorarios()
+    public function misHorarios(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        // Use auth() helper as primary method, fallback to middleware
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        // Ensure we have a valid doctor user
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $horarios = Horarios::where('doctor_id', $doctor->id)
             ->orderBy('horaInicio', 'asc')
             ->get();
 
-        return response()->json(['mis_horarios' => $horarios]);
+        return response()->json(['horarios' => $horarios]);
     }
 }

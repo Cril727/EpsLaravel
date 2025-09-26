@@ -98,9 +98,14 @@ class ConsultoriosController extends Controller
     /**
      * Obtener consultorio del doctor autenticado
      */
-    public function miConsultorio()
+    public function miConsultorio(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $consultorio = Consultorios::where('doctor_id', $doctor->id)->first();
 
         if (!$consultorio) {

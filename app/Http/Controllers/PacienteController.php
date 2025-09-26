@@ -12,7 +12,39 @@ use Illuminate\Support\Facades\Validator;
 
 class PacienteController extends Controller
 {
-    //
+    /**
+     * Public registration for patients
+     */
+    public function register(Request $request)
+    {
+        $validated = Validator::make($request->all(), [
+            'nombres' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'email' => 'required|email|unique:pacientes,email',
+            'telefono' => 'required|string|max:20',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validated->fails()) {
+            return response()->json(['errors' => $validated->errors()], 422);
+        }
+
+        $paciente = Pacientes::create([
+            'nombres' => $request->nombres,
+            'apellidos' => $request->apellidos,
+            'email' => $request->email,
+            'telefono' => $request->telefono,
+            'password' => Hash::make($request->password),
+            'rol_id' => 3, // Patient role
+        ]);
+
+        return response()->json([
+            'message' => 'Paciente registrado correctamente',
+            'success' => true,
+            'paciente' => $paciente->load('rol')
+        ], 201);
+    }
+
     public function index()
     {
         $pacientes = Pacientes::all();
@@ -109,9 +141,20 @@ class PacienteController extends Controller
     /**
      * Obtener perfil del paciente autenticado
      */
-    public function miPerfil()
+    public function miPerfil(Request $request)
     {
-        $paciente = auth('apiPaciente')->user();
+        $user = $request->jwt_user;
+        $paciente = Pacientes::where('email', $user->email)->first();
+        if (!$paciente) {
+            $paciente = Pacientes::create([
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
+                'telefono' => $user->telefono,
+                'password' => $user->password,
+                'rol_id' => $user->rol_id,
+            ]);
+        }
         return response()->json(['perfil' => $paciente->load('rol')]);
     }
 
@@ -120,7 +163,18 @@ class PacienteController extends Controller
      */
     public function actualizarPerfil(Request $request)
     {
-        $paciente = auth('apiPaciente')->user();
+        $user = $request->jwt_user;
+        $paciente = Pacientes::where('email', $user->email)->first();
+        if (!$paciente) {
+            $paciente = Pacientes::create([
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
+                'telefono' => $user->telefono,
+                'password' => $user->password,
+                'rol_id' => $user->rol_id,
+            ]);
+        }
 
         $validated = Validator::make($request->all(), [
             'nombres' => 'sometimes|string',
@@ -144,9 +198,13 @@ class PacienteController extends Controller
     /**
      * Obtener todas las citas del paciente autenticado
      */
-    public function misCitas()
+    public function misCitas(Request $request)
     {
-        $paciente = auth('apiPaciente')->user();
+        $user = $request->jwt_user;
+        $paciente = Pacientes::where('email', $user->email)->first();
+        if (!$paciente) {
+            return response()->json(['citas' => []]);
+        }
         $citas = CitasMedicas::where('paciente_id', $paciente->id)
             ->with(['doctor.especialidad', 'consultorio'])
             ->orderBy('fechaHora', 'desc')
@@ -160,10 +218,23 @@ class PacienteController extends Controller
      */
     public function solicitarCita(Request $request)
     {
-        $paciente = auth('apiPaciente')->user();
+        $user = $request->jwt_user;
+
+        // Find or create paciente based on user
+        $paciente = Pacientes::where('email', $user->email)->first();
+        if (!$paciente) {
+            $paciente = Pacientes::create([
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
+                'telefono' => $user->telefono,
+                'password' => $user->password,
+                'rol_id' => $user->rol_id,
+            ]);
+        }
 
         $validated = Validator::make($request->all(), [
-            'fechaHora' => 'required|date|after:now',
+            'fechaHora' => 'required|date',
             'doctor_id' => 'required|exists:doctores,id',
             'consultorio_id' => 'required|exists:consultorios,id',
             'novedad' => 'sometimes|string',
@@ -213,7 +284,7 @@ class PacienteController extends Controller
     /**
      * Obtener lista de doctores disponibles
      */
-    public function doctoresDisponibles()
+    public function doctoresDisponibles(Request $request)
     {
         $doctores = Doctores::where('estado', 'Activo')
             ->with('especialidad')
@@ -225,12 +296,23 @@ class PacienteController extends Controller
     /**
      * Obtener horarios disponibles de un doctor
      */
-    public function horariosDisponibles($doctor_id)
+    public function horariosDisponibles(Request $request, $doctor_id)
     {
         $horarios = \App\Models\Horarios::where('doctor_id', $doctor_id)
             ->where('estado', 'Activo')
             ->get();
 
         return response()->json(['horarios_disponibles' => $horarios]);
+    }
+
+    /**
+     * Obtener consultorios disponibles de un doctor
+     */
+    public function consultoriosDisponibles(Request $request, $doctor_id)
+    {
+        $consultorios = Consultorios::where('doctor_id', $doctor_id)
+            ->get();
+
+        return response()->json(['consultorios_disponibles' => $consultorios]);
     }
 }

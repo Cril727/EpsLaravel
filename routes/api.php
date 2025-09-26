@@ -17,117 +17,125 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [PacienteController::class, 'register']); // Public registration for patients
 
-//Rutas protegidas con autenticación JWT
-Route::middleware(['jwt.auth'])->group(function () {
+// ===== JWT PROTEGIDAS ===== //
+Route::middleware(['jwt.multiguard'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/addPaciete', [PacienteController::class, 'store']);
 
-    // Doctores
+
+    // ===== DOCTOR =====
     Route::middleware(['rol:doctor'])->group(function () {
-
-        //Perfil del doctor
+        // Perfil del doctor
         Route::get('/mi-perfil', [DoctorController::class, 'miPerfil']);
         Route::put('/actualizar-perfil', [DoctorController::class, 'actualizarPerfil']);
 
-        //Citas del doctor
-        Route::get('/mis-citas', [DoctorController::class, 'misCitas']);
-        Route::get('/mis-citas-pendientes', [DoctorController::class, 'misCitasPendientes']);
-        Route::put('/aprobar-cita/{id}', [DoctorController::class, 'aprobarCita']);
-        Route::put('/rechazar-cita/{id}', [DoctorController::class, 'rechazarCita']);
+        // Citas del doctor
+        Route::get('/doctor/mis-citas', [DoctorController::class, 'misCitas']);
+        Route::get('/doctor/mis-citas-pendientes', [DoctorController::class, 'misCitasPendientes']);
+        Route::put('/doctor/aprobar-cita/{id}', [DoctorController::class, 'aprobarCita']);
+        Route::put('/doctor/rechazar-cita/{id}', [DoctorController::class, 'rechazarCita']);
 
-        //Horarios del doctor
-        Route::get('/mis-horarios', [HorarioController::class, 'misHorarios']);
-        Route::post('/addHorario',[HorarioController::class,'store']);
-        Route::put('/updateHorario/{id}',[HorarioController::class,'update']);
-        Route::delete('/deleteHorario/{id}',[HorarioController::class,'delete']);
-        Route::get('/horarioById/{id}',[HorarioController::class,'horarioById']);
+        // Horarios del doctor
+        Route::get('/doctor/mis-horarios', [HorarioController::class, 'misHorarios']);
+        Route::post('/doctor/addHorario', [HorarioController::class, 'store']);
+        Route::put('/doctor/updateHorario/{id}', [HorarioController::class, 'update']);
+        Route::delete('/doctor/deleteHorario/{id}', [HorarioController::class, 'delete']);
+        Route::get('/doctor/horarioById/{id}', [HorarioController::class, 'horarioById']);
 
-        //Consultorio del doctor
-        Route::get('/mi-consultorio', [ConsultoriosController::class, 'miConsultorio']);
+        // Consultorio del doctor
+        Route::get('/doctor/mi-consultorio', [ConsultoriosController::class, 'miConsultorio']);
     });
 
-    // Pacientes
+    // ===== PACIENTE =====
     Route::middleware(['rol:paciente'])->group(function () {
-
-        //Perfil del paciente
+        // Perfil del paciente
         Route::get('/mi-perfil', [PacienteController::class, 'miPerfil']);
         Route::put('/actualizar-perfil', [PacienteController::class, 'actualizarPerfil']);
 
-        //Citas del paciente
+        // Citas del paciente
         Route::get('/mis-citas', [PacienteController::class, 'misCitas']);
         Route::post('/solicitar-cita', [PacienteController::class, 'solicitarCita']);
         Route::get('/doctores-disponibles', [PacienteController::class, 'doctoresDisponibles']);
         Route::get('/horarios-disponibles/{doctor_id}', [PacienteController::class, 'horariosDisponibles']);
+        Route::get('/consultorios-disponibles/{doctor_id}', [PacienteController::class, 'consultoriosDisponibles']);
     });
 
-    //Admin
+    // ===== ADMIN =====
     Route::middleware(['rol:admin'])->group(function () {
-
-        //Perfil del admin
+        // Perfil del admin
         Route::get('/mi-perfil', [UserController::class, 'miPerfil']);
         Route::put('/actualizar-perfil', [UserController::class, 'actualizarPerfil']);
 
-        //Roles
-        Route::post('/addRol',[RoleControler::class,'store']);
-        Route::get('/roles',[RoleControler::class,'index']);
-        Route::put('/updateRoles/{id}',[RoleControler::class,'update']);
-        Route::delete('/deleteRol/{id}',[RoleControler::class,'delete']);
-        Route::get('/rolById/{id}',[RoleControler::class,'rolById']);
+        // Roles
+        Route::post('/addRol', [RoleControler::class, 'store']);
+        Route::get('/roles', [RoleControler::class, 'index']);
+        Route::put('/updateRoles/{id}', [RoleControler::class, 'update']);
+        Route::delete('/deleteRol/{id}', [RoleControler::class, 'delete']);
+        Route::get('/rolById/{id}', [RoleControler::class, 'rolById']);
 
-        //User
-        Route::post('/addUser',[UserController::class,'store']);
-        Route::get('/users',[UserController::class,'index']);
-        Route::put('/updateUser/{id}',[UserController::class,'update']);
-        Route::delete('/deleteUser/{id}',[UserController::class,'delete']);
-        Route::get('/userById/{id}',[UserController::class,'userById']);
+        // Users (admins)
+        Route::post('/addUser', [UserController::class, 'store']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::put('/updateUser/{id}', [UserController::class, 'update']);
+        Route::delete('/deleteUser/{id}', [UserController::class, 'delete']);
+        Route::get('/userById/{id}', [UserController::class, 'userById']);
 
-        //Doctores
-        Route::post('/addDoctor',[DoctorController::class,'store']);
-        Route::get('/doctores',[DoctorController::class,'index']);
-        Route::put('/updateDoctor/{id}',[DoctorController::class,'update']);
-        Route::delete('/deleteDoctor/{id}',[DoctorController::class,'delete']);
-        Route::get('/DoctorById/{id}',[DoctorController::class,'DoctorById']);
+        // Doctores (gestión)
+        Route::post('/addDoctor', [DoctorController::class, 'store']);
+        Route::get('/doctores', [DoctorController::class, 'index']);
+        Route::put('/updateDoctor/{id}', [DoctorController::class, 'update']);
+        Route::delete('/deleteDoctor/{id}', [DoctorController::class, 'delete']);
+        Route::get('/DoctorById/{id}', [DoctorController::class, 'DoctorById']);
 
-        //Especialidades
-        Route::post('/addEspecialidad',[EspecialidadController::class,'store']);
-        Route::get('/Especialidades',[EspecialidadController::class,'index']);
-        Route::put('/updateEspecialidad/{id}',[EspecialidadController::class,'update']);
-        Route::delete('/deleteEspecialidad/{id}',[EspecialidadController::class,'delete']);
-        Route::get('/especialidadById/{id}',[EspecialidadController::class,'especialidadById']);
+        // Especialidades (gestión)
+        Route::post('/addEspecialidad', [EspecialidadController::class, 'store']);
+        Route::get('/Especialidades', [EspecialidadController::class, 'index']);
+        Route::put('/updateEspecialidad/{id}', [EspecialidadController::class, 'update']);
+        Route::delete('/deleteEspecialidad/{id}', [EspecialidadController::class, 'delete']);
+        Route::get('/especialidadById/{id}', [EspecialidadController::class, 'especialidadById']);
 
-        //Pacientes
-        Route::post('/addPaciete',[PacienteController::class,'store']);
-        Route::get('/pacientes',[PacienteController::class,'index']);
-        Route::put('/updatePaciente/{id}',[PacienteController::class,'update']);
-        Route::delete('/deletePaciente/{id}',[PacienteController::class,'delete']);
-        Route::get('/pacienteById/{id}',[PacienteController::class,'pacienteById']);
+        // Pacientes (gestión)
+        Route::post('/addPaciete', [PacienteController::class, 'store']);
+        Route::get('/pacientes', [PacienteController::class, 'index']);
+        Route::put('/updatePaciente/{id}', [PacienteController::class, 'update']);
+        Route::delete('/deletePaciente/{id}', [PacienteController::class, 'delete']);
+        Route::get('/pacienteById/{id}', [PacienteController::class, 'pacienteById']);
 
-        //Consultorios
-        Route::post('/addConsultorio',[ConsultoriosController::class,'store']);
-        Route::get('/consultorios',[ConsultoriosController::class,'index']);
-        Route::put('/updateConsultorio/{id}',[ConsultoriosController::class,'update']);
-        Route::delete('/deleteConsultorio/{id}',[ConsultoriosController::class,'delete']);
-        Route::get('/consultorioById/{id}',[ConsultoriosController::class,'consultorioById']);
+        // Consultorios (gestión)
+        Route::post('/addConsultorio', [ConsultoriosController::class, 'store']);
+        Route::get('/consultorios', [ConsultoriosController::class, 'index']);
+        Route::put('/updateConsultorio/{id}', [ConsultoriosController::class, 'update']);
+        Route::delete('/deleteConsultorio/{id}', [ConsultoriosController::class, 'delete']);
+        Route::get('/consultorioById/{id}', [ConsultoriosController::class, 'consultorioById']);
 
-        //Horarios
-        Route::post('/addHorario',[HorarioController::class,'store']);
-        Route::get('/horario',[HorarioController::class,'index']);
-        Route::put('/updateHorario/{id}',[HorarioController::class,'update']);
-        Route::delete('/deleteHorario/{id}',[HorarioController::class,'delete']);
-        Route::get('/horarioById/{id}',[HorarioController::class,'horarioById']);
+        // Horarios (gestión)
+        Route::post('/addHorario', [HorarioController::class, 'store']);
+        Route::get('/horario', [HorarioController::class, 'index']);
+        Route::put('/updateHorario/{id}', [HorarioController::class, 'update']);
+        Route::delete('/deleteHorario/{id}', [HorarioController::class, 'delete']);
+        Route::get('/horarioById/{id}', [HorarioController::class, 'horarioById']);
 
-        //Citas médicas
-        Route::get('/citas',[CitaController::class,'index']);
-        Route::get('/citaById/{id}',[CitaController::class,'CitaById']);
+        // Citas médicas (gestión)
+        Route::get('/citas', [CitaController::class, 'index']);
+        Route::get('/citaById/{id}', [CitaController::class, 'CitaById']);
+        Route::post('/addCita', [CitaController::class, 'store']);
+        Route::put('/updateCita/{id}', [CitaController::class, 'update']);
+        Route::delete('/deleteCita/{id}', [CitaController::class, 'delete']);
+        Route::get('/citaById/{id}', [CitaController::class, 'CitaById']);
     });
 
-    // Doctor, Paciente y Admin
-
+    // ===== COMÚN A doctor, paciente y admin =====
     Route::group(['middleware' => ['rol:doctor,paciente,admin']], function () {
-        Route::post('/addCita',[CitaController::class,'store']);
-        Route::put('/updateCita/{id}',[CitaController::class,'update']);
-        Route::delete('/deleteCita/{id}',[CitaController::class,'delete']);
-        Route::get('/citaById/{id}',[CitaController::class,'CitaById']);
+        
+        Route::get('/consultorios', [ConsultoriosController::class, 'index']);
+        Route::get('/doctores', [DoctorController::class, 'index']);
+        Route::get('/horarioById/{id}', [HorarioController::class, 'horarioById']);
+        Route::post('/addCita', [CitaController::class, 'store']);
+        Route::put('/updateCita/{id}', [CitaController::class, 'update']);
+        Route::delete('/deleteCita/{id}', [CitaController::class, 'delete']);
+        Route::get('/citaById/{id}', [CitaController::class, 'CitaById']);
     });
 });

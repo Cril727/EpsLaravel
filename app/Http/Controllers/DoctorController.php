@@ -26,7 +26,6 @@ class DoctorController extends Controller
             'email' => 'required|email',
             'telefono' => 'required|string',
             'estado' => 'required|string',
-            'password' => 'required|string',
             'rol_id' => 'required|numeric',
             'especialidad_id' => 'required|numeric',
         ]);
@@ -41,7 +40,7 @@ class DoctorController extends Controller
             'email' => $request->email,
             'telefono' => $request->telefono,
             'estado'=> $request->estado,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make('12345678'), // Default password for all doctors
             'rol_id' => $request->rol_id,
             'especialidad_id' => $request->especialidad_id,
         ]);
@@ -68,7 +67,8 @@ class DoctorController extends Controller
             'apellidos' => 'required|string',
             'email' => 'required|string',
             'telefono' => 'required|string',
-            'password' => 'required|string',
+            'estado' => 'required|string',
+            'password' => 'sometimes|string',
             'rol_id' => 'required|numeric',
             'especialidad_id' => 'required|numeric',
         ]);
@@ -77,8 +77,17 @@ class DoctorController extends Controller
             return response()->json(['errors' => $validated->errors()], 500);
         }
 
+        $updateData = $validated->validated();
 
-        $Doctor->update($validated->validated());
+        // Hash password if provided
+        if (isset($updateData['password']) && !empty($updateData['password'])) {
+            $updateData['password'] = Hash::make($updateData['password']);
+        } else {
+            // Remove password from update data if not provided
+            unset($updateData['password']);
+        }
+
+        $Doctor->update($updateData);
 
         return response()->json(['message' => 'Actualizado correctamente', 'success' => true, 'Doctor' => $Doctor]);
     }
@@ -110,9 +119,14 @@ class DoctorController extends Controller
     /**
      * Obtener perfil del doctor autenticado
      */
-    public function miPerfil()
+    public function miPerfil(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         return response()->json(['perfil' => $doctor->load('especialidad', 'rol')]);
     }
 
@@ -121,7 +135,11 @@ class DoctorController extends Controller
      */
     public function actualizarPerfil(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
 
         $validated = Validator::make($request->all(), [
             'nombres' => 'sometimes|string',
@@ -146,9 +164,14 @@ class DoctorController extends Controller
     /**
      * Obtener todas las citas del doctor autenticado
      */
-    public function misCitas()
+    public function misCitas(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $citas = CitasMedicas::where('doctor_id', $doctor->id)
             ->with(['paciente', 'consultorio'])
             ->orderBy('fechaHora', 'desc')
@@ -160,9 +183,14 @@ class DoctorController extends Controller
     /**
      * Obtener citas pendientes del doctor autenticado
      */
-    public function misCitasPendientes()
+    public function misCitasPendientes(Request $request)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $citas = CitasMedicas::where('doctor_id', $doctor->id)
             ->where('estado', 'Programada')
             ->with(['paciente', 'consultorio'])
@@ -173,11 +201,16 @@ class DoctorController extends Controller
     }
 
     /**
-     * Aprobar una cita (cambiar estado a Completada)
+     * Aprobar una cita (mantener estado como Programada)
      */
-    public function aprobarCita($id)
+    public function aprobarCita(Request $request, $id)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $cita = CitasMedicas::where('id', $id)
             ->where('doctor_id', $doctor->id)
             ->where('estado', 'Programada')
@@ -187,7 +220,7 @@ class DoctorController extends Controller
             return response()->json(['message' => 'Cita no encontrada o no se puede aprobar'], 404);
         }
 
-        $cita->update(['estado' => 'Completada']);
+        $cita->update(['estado' => 'Programada']);
         return response()->json([
             'message' => 'Cita aprobada correctamente',
             'success' => true,
@@ -198,9 +231,14 @@ class DoctorController extends Controller
     /**
      * Rechazar una cita (cambiar estado a Rechazada)
      */
-    public function rechazarCita($id)
+    public function rechazarCita(Request $request, $id)
     {
-        $doctor = auth('apiDoctor')->user();
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
         $cita = CitasMedicas::where('id', $id)
             ->where('doctor_id', $doctor->id)
             ->where('estado', 'Programada')

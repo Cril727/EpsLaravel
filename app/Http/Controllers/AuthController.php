@@ -30,10 +30,14 @@ class AuthController extends Controller
             if ($token = Auth::guard($guard)->attempt($credentials)) {
                 $user = Auth::guard($guard)->user();
 
-                $role = $user->role
-                    ?? $user->rol
-                    ?? ($user->rol_id ?? null)
-                    ?? ($guard === 'apiAdmin' ? 'admin' : ($guard === 'apiDoctor' ? 'doctor' : 'paciente'));
+                $expectedRole = $guard === 'apiAdmin' ? 'admin' : ($guard === 'apiDoctor' ? 'doctor' : 'paciente');
+
+                $userRole = $user->rol->rol ?? null;
+
+                if ($userRole !== $expectedRole) {
+                    // Role mismatch, continue to next guard
+                    continue;
+                }
 
                 return response()->json([
                     'access_token' => $token,
