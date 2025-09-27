@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('citas_medicas', function (Blueprint $table) {
             $table->id();
             $table->dateTime('fechaHora');
+            //Crar enum de estado // Pendiente
             $table->enum('estado', ["Programada","Completada","Cancelada","Rechazada"])->default('Programada');
             $table->string('novedad')->nullable();
             $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('cascade');

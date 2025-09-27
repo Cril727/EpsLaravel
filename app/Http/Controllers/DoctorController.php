@@ -65,16 +65,16 @@ class DoctorController extends Controller
         $validated = Validator::make($request->all(), [
             'nombres' => 'required|string',
             'apellidos' => 'required|string',
-            'email' => 'required|string',
+            'email' => 'required|email|unique:doctores,email,' . $Doctor->id,
             'telefono' => 'required|string',
-            'estado' => 'required|string',
+            'estado' => 'required|in:Activo,Inactivo',
             'password' => 'sometimes|string',
-            'rol_id' => 'required|numeric',
-            'especialidad_id' => 'required|numeric',
+            'rol_id' => 'required|numeric|exists:roles,id',
+            'especialidad_id' => 'required|numeric|exists:especialidades,id',
         ]);
 
         if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 500);
+            return response()->json(['errors' => $validated->errors()], 422);
         }
 
         $updateData = $validated->validated();

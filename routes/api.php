@@ -80,6 +80,7 @@ Route::middleware(['jwt.multiguard'])->group(function () {
         Route::post('/addUser', [UserController::class, 'store']);
         Route::get('/users', [UserController::class, 'index']);
         Route::put('/updateUser/{id}', [UserController::class, 'update']);
+        Route::put('/actualizar-perfil-admin/{id}', [UserController::class, 'actualizarPerfilAdmin']);
         Route::delete('/deleteUser/{id}', [UserController::class, 'delete']);
         Route::get('/userById/{id}', [UserController::class, 'userById']);
 
