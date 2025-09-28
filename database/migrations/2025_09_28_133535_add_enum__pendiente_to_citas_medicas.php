@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('citas_medicas', function (Blueprint $table) {
             //
             $table->dropColumn('estado');
-            $table->enum('estado', ["Programada","Pendiente","Completada","Cancelada","Rechazada"])->default('Programada');
+            $table->enum('estado', ["Programada","Por aprobar","Completada","Cancelada","Rechazada"])->default('Programada');
         });
     }
 
@@ -25,6 +25,7 @@ return new class extends Migration
     {
         Schema::table('citas_medicas', function (Blueprint $table) {
             //
+            $table->dropColumn('estado');
             $table->enum('estado', ["Programada","Completada","Cancelada","Rechazada"])->default('Programada');
         });
     }

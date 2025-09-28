@@ -14,7 +14,7 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Los atributos que son asignables en masa.
      *
      * @var list<string>
      */
@@ -28,7 +28,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Los atributos que deben estar ocultos para la serialización.
      *
      * @var list<string>
      */
@@ -52,7 +52,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Obtener los atributos que deben ser convertidos.
      *
      * @return array<string, string>
      */

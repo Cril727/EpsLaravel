@@ -267,7 +267,7 @@ class PacienteController extends Controller
 
         $cita = CitasMedicas::create([
             'fechaHora' => $request->fechaHora,
-            'estado' => 'Programada',
+            'estado' => 'Por aprobar',
             'novedad' => $request->novedad ?? 'Cita solicitada por el paciente',
             'paciente_id' => $paciente->id,
             'doctor_id' => $request->doctor_id,
@@ -298,9 +298,22 @@ class PacienteController extends Controller
      */
     public function horariosDisponibles(Request $request, $doctor_id)
     {
+        $fecha = $request->query('fecha'); // Optional date filter
+
         $horarios = \App\Models\Horarios::where('doctor_id', $doctor_id)
             ->where('estado', 'Activo')
             ->get();
+
+        if ($fecha) {
+            // Filter out horarios that are already booked on the given date
+            $horarios = $horarios->filter(function ($horario) use ($fecha, $doctor_id) {
+                $fechaHora = $fecha . ' ' . $horario->horaInicio;
+                $citaExistente = CitasMedicas::where('fechaHora', $fechaHora)
+                    ->where('doctor_id', $doctor_id)
+                    ->exists();
+                return !$citaExistente;
+            });
+        }
 
         return response()->json(['horarios_disponibles' => $horarios]);
     }

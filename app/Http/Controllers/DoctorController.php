@@ -65,16 +65,16 @@ class DoctorController extends Controller
         $validated = Validator::make($request->all(), [
             'nombres' => 'required|string',
             'apellidos' => 'required|string',
-            'email' => 'required|email|unique:doctores,email,' . $Doctor->id,
+            'email' => 'required|string',
             'telefono' => 'required|string',
-            'estado' => 'required|in:Activo,Inactivo',
+            'estado' => 'required|string',
             'password' => 'sometimes|string',
-            'rol_id' => 'required|numeric|exists:roles,id',
-            'especialidad_id' => 'required|numeric|exists:especialidades,id',
+            'rol_id' => 'required|numeric',
+            'especialidad_id' => 'required|numeric',
         ]);
 
         if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 422);
+            return response()->json(['errors' => $validated->errors()], 500);
         }
 
         $updateData = $validated->validated();
@@ -192,7 +192,7 @@ class DoctorController extends Controller
         }
 
         $citas = CitasMedicas::where('doctor_id', $doctor->id)
-            ->where('estado', 'Programada')
+            ->where('estado', 'Por aprobar')
             ->with(['paciente', 'consultorio'])
             ->orderBy('fechaHora', 'asc')
             ->get();
@@ -213,7 +213,7 @@ class DoctorController extends Controller
 
         $cita = CitasMedicas::where('id', $id)
             ->where('doctor_id', $doctor->id)
-            ->where('estado', 'Programada')
+            ->where('estado', 'Por aprobar')
             ->first();
 
         if (!$cita) {
@@ -241,7 +241,7 @@ class DoctorController extends Controller
 
         $cita = CitasMedicas::where('id', $id)
             ->where('doctor_id', $doctor->id)
-            ->where('estado', 'Programada')
+            ->where('estado', 'Por aprobar')
             ->first();
 
         if (!$cita) {
@@ -251,6 +251,34 @@ class DoctorController extends Controller
         $cita->update(['estado' => 'Rechazada']);
         return response()->json([
             'message' => 'Cita rechazada correctamente',
+            'success' => true,
+            'cita' => $cita->load(['paciente', 'consultorio'])
+        ]);
+    }
+
+    /**
+     * Completar una cita (cambiar estado a Completada)
+     */
+    public function completarCita(Request $request, $id)
+    {
+        $doctor = auth('apiDoctor')->user() ?? $request->jwt_user;
+
+        if (!$doctor || !isset($doctor->id)) {
+            return response()->json(['error' => 'Usuario no válido'], 401);
+        }
+
+        $cita = CitasMedicas::where('id', $id)
+            ->where('doctor_id', $doctor->id)
+            ->where('estado', 'Programada')
+            ->first();
+
+        if (!$cita) {
+            return response()->json(['message' => 'Cita no encontrada o no se puede completar'], 404);
+        }
+
+        $cita->update(['estado' => 'Completada']);
+        return response()->json([
+            'message' => 'Cita completada correctamente',
             'success' => true,
             'cita' => $cita->load(['paciente', 'consultorio'])
         ]);

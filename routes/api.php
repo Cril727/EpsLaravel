@@ -37,6 +37,7 @@ Route::middleware(['jwt.multiguard'])->group(function () {
         Route::get('/doctor/mis-citas-pendientes', [DoctorController::class, 'misCitasPendientes']);
         Route::put('/doctor/aprobar-cita/{id}', [DoctorController::class, 'aprobarCita']);
         Route::put('/doctor/rechazar-cita/{id}', [DoctorController::class, 'rechazarCita']);
+        Route::put('/doctor/completar-cita/{id}', [DoctorController::class, 'completarCita']);
 
         // Horarios del doctor
         Route::get('/doctor/mis-horarios', [HorarioController::class, 'misHorarios']);
