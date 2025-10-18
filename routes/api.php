@@ -18,10 +18,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [PacienteController::class, 'register']); // Public registration for patients
+Route::post('/reset-password', [AuthController::class, 'resetPassword']); // Public password reset
 
 // ===== JWT PROTEGIDAS ===== //
 Route::middleware(['jwt.multiguard'])->group(function () {
 
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/addPaciete', [PacienteController::class, 'store']);
 

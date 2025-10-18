@@ -26,8 +26,8 @@ class HorarioController extends Controller
         }
 
         $validated = Validator::make($request->all(), [
-            'horaInicio' => 'required|date_format:H:i',
-            'horaFin'    => 'required|date_format:H:i',
+            'horaInicio' => 'required|date_format:H:i:s',
+            'horaFin'    => 'required|date_format:H:i:s',
             'estado' => 'required|string',
         ]);
 
@@ -67,8 +67,8 @@ class HorarioController extends Controller
         }
 
         $validated = Validator::make($request->all(), [
-            'horaInicio' => 'required|date_format:H:i',
-            'horaFin'    => 'required|date_format:H:i',
+            'horaInicio' => 'required|date_format:H:i:s',
+            'horaFin'    => 'required|date_format:H:i:s',
             'estado' => 'required|string',
         ]);
 
@@ -76,7 +76,11 @@ class HorarioController extends Controller
             return response()->json(['errors' => $validated->errors()], 422);
         }
 
-        $horario->update($validated->validated());
+        $horario->update([
+            'horaInicio' => $request->horaInicio,
+            'horaFin' => $request->horaFin,
+            'estado' => $request->estado,
+        ]);
 
         return response()->json(['message' => 'Actualizado correctamente', 'success' => true, 'horario' => $horario]);
     }

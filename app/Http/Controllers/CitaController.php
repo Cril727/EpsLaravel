@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\CitasMedicas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\AppointmentRequest;
 
 class CitaController extends Controller
 {
@@ -39,6 +42,15 @@ class CitaController extends Controller
             'doctor_id' => $request->doctor_id,
             'consultorio_id' => $request->consultorio_id
         ]);
+
+        // Send email to doctor for approval
+        try {
+            $doctor = $crearCita->doctor;
+            Mail::to($doctor->email)->send(new AppointmentRequest($crearCita));
+        } catch (\Exception $e) {
+            // Log the error but don't fail the appointment creation
+            Log::error('Failed to send appointment request email: ' . $e->getMessage());
+        }
 
         return response()->json(
             [
