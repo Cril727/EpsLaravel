@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\AppointmentRequest;
+use App\Services\ExpoPushNotificationService;
 
 class CitaController extends Controller
 {
@@ -52,6 +53,23 @@ class CitaController extends Controller
             Log::error('Failed to send appointment request email: ' . $e->getMessage());
         }
 
+        // Send push notification to doctor
+        try {
+            $doctor = $crearCita->doctor;
+            if ($doctor && $doctor->user && $doctor->user->expo_push_token) {
+                $pushService = new ExpoPushNotificationService();
+                $appointmentData = [
+                    'id' => $crearCita->id,
+                    'fechaHora' => $crearCita->fechaHora,
+                    'doctor_name' => $doctor->nombre . ' ' . $doctor->apellido,
+                    'consultorio_name' => $crearCita->consultorio->nombre ?? 'Consultorio',
+                ];
+                $pushService->sendAppointmentNotification($doctor->user->expo_push_token, $appointmentData);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send push notification: ' . $e->getMessage());
+        }
+
         return response()->json(
             [
                 'message' => 'Cita creado correctamente',
@@ -69,6 +87,8 @@ class CitaController extends Controller
             return response()->json(['message' => "No se ha encontrado el Cita"]);
         }
 
+        $oldStatus = $Cita->estado;
+
         $validated = Validator::make($request->all(), [
             'fechaHora' => 'required|date',
             'estado'    => 'required|string',
@@ -82,8 +102,30 @@ class CitaController extends Controller
             return response()->json(['errors' => $validated->errors()], 500);
         }
 
-
         $Cita->update($validated->validated());
+
+        // Send push notification if status changed
+        if ($oldStatus !== $Cita->estado) {
+            try {
+                $paciente = $Cita->paciente;
+                if ($paciente && $paciente->user && $paciente->user->expo_push_token) {
+                    $pushService = new ExpoPushNotificationService();
+                    $appointmentData = [
+                        'id' => $Cita->id,
+                        'fechaHora' => $Cita->fechaHora,
+                        'doctor_name' => $Cita->doctor->nombre . ' ' . $Cita->doctor->apellido,
+                        'consultorio_name' => $Cita->consultorio->nombre ?? 'Consultorio',
+                    ];
+                    $pushService->sendAppointmentStatusUpdate(
+                        $paciente->user->expo_push_token,
+                        $Cita->estado,
+                        $appointmentData
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send status update push notification: ' . $e->getMessage());
+            }
+        }
 
         return response()->json(['message' => 'Actualizado correctamente', 'success' => true, 'Cita' => $Cita]);
     }

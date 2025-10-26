@@ -25,6 +25,7 @@ Route::middleware(['jwt.multiguard'])->group(function () {
 
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/update-push-token', [AuthController::class, 'updatePushToken']);
     Route::post('/addPaciete', [PacienteController::class, 'store']);
 
 

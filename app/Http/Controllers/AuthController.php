@@ -14,6 +14,7 @@ use App\Models\Doctores;
 use App\Models\Pacientes;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use App\Services\ExpoPushNotificationService;
 
 class AuthController extends Controller
 {
@@ -218,6 +219,18 @@ class AuthController extends Controller
             $user->password = Hash::make($request->password);
             $user->save();
 
+            // Send push notification
+            try {
+                if ($user->expo_push_token) {
+                    $pushService = new ExpoPushNotificationService();
+                    $pushService->sendPasswordChangeNotification($user->expo_push_token);
+                    Log::info('Password change notification sent', ['user_id' => $user->id]);
+                }
+            } catch (\Exception $pushError) {
+                Log::error('Failed to send password change notification: ' . $pushError->getMessage());
+                // Don't fail the password change if notification fails
+            }
+
             return response()->json([
                 'message' => 'Contraseña actualizada exitosamente',
                 'success' => true
@@ -226,6 +239,61 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al cambiar la contraseña',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updatePushToken(Request $request)
+    {
+        $v = Validator::make($request->all(), [
+            'expo_push_token' => 'required|string',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json([
+                'message' => 'Errores de validación',
+                'errors' => $v->errors(),
+            ], 422);
+        }
+
+        try {
+            // Get the authenticated user from any guard
+            $guards = ['apiAdmin', 'apiDoctor', 'apiPaciente'];
+            $user = null;
+
+            foreach ($guards as $guard) {
+                if (Auth::guard($guard)->check()) {
+                    $user = Auth::guard($guard)->user();
+                    break;
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Usuario no autenticado',
+                ], 401);
+            }
+
+            // Update the push token
+            $user->expo_push_token = $request->expo_push_token;
+            $user->save();
+
+            Log::info('Push token updated for user', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'token' => substr($request->expo_push_token, 0, 20) . '...'
+            ]);
+
+            return response()->json([
+                'message' => 'Token de notificaciones actualizado exitosamente',
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating push token: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al actualizar el token de notificaciones',
                 'error' => $e->getMessage()
             ], 500);
         }
